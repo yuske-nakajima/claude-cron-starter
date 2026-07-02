@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { runJobSafely } from "../src/safe-run";
-import type { Job } from "../src/types";
+import { runJobSafely } from "./safe-run";
+import type { Job } from "./types";
 
 test("runJobSafely swallows a rejecting job so the resident process survives", async () => {
   const failing: Job = {

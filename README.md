@@ -9,7 +9,7 @@ A thin, copy-friendly starter for running [Claude Agent SDK](https://docs.claude
 ## Concept
 
 - **LLM as middleware** — leave ambiguous judgment, summarization, and classification to Claude; keep deterministic I/O in code or behind permissions.
-- **Stay thin** — the core is just a croner loop that fires jobs. Each job is `index.ts` (skeleton) + `prompt.md` (instructions).
+- **Stay thin** — the core is just a croner loop that fires jobs. Each job is `index.ts` (skeleton) + `prompt.md` (instructions), with an optional colocated `index.test.ts`.
 - **Idempotent one-shot jobs** — every job is safe to run any number of times.
 
 ## Requirements
@@ -69,6 +69,7 @@ Schedules are evaluated in the `Asia/Tokyo` timezone (`src/cron.ts`).
 1. Create `src/jobs/<name>/` with `index.ts` and `prompt.md`.
 2. In `index.ts`, export `schedule` (cron 5-field syntax) and `run()`.
 3. Register it in the `jobs` array in `src/jobs/index.ts`.
+4. Optionally colocate a test as `src/jobs/<name>/index.test.ts` — `bun test` picks up `*.test.ts` anywhere (see `src/jobs/hello/index.test.ts`).
 
 Skeleton for `src/jobs/<name>/index.ts`:
 
