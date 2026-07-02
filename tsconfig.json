@@ -16,5 +16,5 @@
     "isolatedModules": true,
     "types": ["node", "bun"]
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*"]
 }

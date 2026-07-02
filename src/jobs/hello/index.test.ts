@@ -13,8 +13,8 @@ mock.module("@anthropic-ai/claude-agent-sdk", () => ({
     })(),
 }));
 
-const { jobs } = await import("../src/jobs");
-const { run } = await import("../src/jobs/hello");
+const { jobs } = await import("../");
+const { run } = await import("./");
 
 test("hello job is registered with a string schedule", () => {
   const hello = jobs.find((j) => j.name === "hello");

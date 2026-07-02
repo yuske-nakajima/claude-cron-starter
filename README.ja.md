@@ -9,7 +9,7 @@
 ## コンセプト
 
 - **LLM は middleware** — 曖昧な判断・要約・分類だけ Claude に任せ、決定的な I/O はコード側または権限で締める。
-- **薄く保つ** — コアはジョブを発火する croner ループのみ。各ジョブは `index.ts`（骨格）+ `prompt.md`（指示）の 2 枚構成。
+- **薄く保つ** — コアはジョブを発火する croner ループのみ。各ジョブは `index.ts`（骨格）+ `prompt.md`（指示）の 2 枚構成（テストを書く場合は `index.test.ts` を同居させる）。
 - **冪等 one-shot ジョブ** — 各ジョブは何回叩いても同じ結果になるよう設計する。
 
 ## 前提条件
@@ -69,6 +69,7 @@ tmux attach -t cron    # 再アタッチ
 1. `src/jobs/<name>/` を作り、`index.ts` と `prompt.md` を置く。
 2. `index.ts` で `schedule`（cron 5 フィールド記法）と `run()` を export する。
 3. `src/jobs/index.ts` の `jobs` 配列に登録する。
+4. テストを書く場合は `src/jobs/<name>/index.test.ts` として同ディレクトリに置く。`bun test` は場所を問わず `*.test.ts` を拾う（例: `src/jobs/hello/index.test.ts`）。
 
 `src/jobs/<name>/index.ts` の骨格:
 
