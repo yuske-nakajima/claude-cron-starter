@@ -1,5 +1,6 @@
 import { Cron } from "croner";
 import { jobs } from "./jobs";
+import { cleanupOldLogs, getLogDir } from "./lib/log";
 import { runJobSafely } from "./safe-run";
 
 const TIMEZONE = "Asia/Tokyo";
@@ -8,6 +9,18 @@ const TIMEZONE = "Asia/Tokyo";
 process.on("unhandledRejection", (reason) => {
   console.error("unhandledRejection:", reason);
 });
+
+// ログローテーション（LOG_DIR が設定されている場合のみ）
+if (getLogDir()) {
+  try {
+    const deleted = await cleanupOldLogs();
+    if (deleted > 0) {
+      console.log(`log cleanup: deleted ${deleted} old log file(s)`);
+    }
+  } catch (error) {
+    console.warn("log cleanup failed:", error);
+  }
+}
 
 for (const job of jobs) {
   new Cron(
