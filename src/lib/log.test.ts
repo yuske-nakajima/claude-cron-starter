@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { JobLogEntry } from "./log";
+import type { CompletedLogEntry, StartedLogEntry } from "./log";
 import { appendJobLog, cleanupOldLogs, getLogDir } from "./log";
 
 const BASE_TMP = join(
@@ -12,8 +12,11 @@ const BASE_TMP = join(
   ".tmp-test-log",
 );
 
-function makeEntry(overrides: Partial<JobLogEntry> = {}): JobLogEntry {
+function makeEntry(
+  overrides: Partial<CompletedLogEntry> = {},
+): CompletedLogEntry {
   return {
+    event: "completed",
     jobName: "test-job",
     startedAt: "2026-07-07T10:00:00.000Z",
     finishedAt: "2026-07-07T10:00:01.000Z",
@@ -137,6 +140,27 @@ describe("appendJobLog", () => {
       () => false,
     );
     expect(exists).toBe(false);
+  });
+
+  test("writes StartedLogEntry to YYYY-MM-DD.jsonl", async () => {
+    const entry: StartedLogEntry = {
+      event: "started",
+      jobName: "started-job",
+      startedAt: "2026-07-08T09:30:00.000Z",
+    };
+    await appendJobLog(entry);
+
+    const content = await readFile(join(tmpDir, "2026-07-08.jsonl"), "utf8");
+    const lines = content.trimEnd().split("\n");
+    expect(lines).toHaveLength(1);
+
+    const parsed = JSON.parse(lines[0] ?? "") as Record<string, unknown>;
+    expect(parsed.event).toBe("started");
+    expect(parsed.jobName).toBe("started-job");
+    expect(parsed.startedAt).toBe("2026-07-08T09:30:00.000Z");
+    expect(parsed).not.toHaveProperty("finishedAt");
+    expect(parsed).not.toHaveProperty("durationMs");
+    expect(parsed).not.toHaveProperty("status");
   });
 });
 

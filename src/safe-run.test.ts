@@ -81,10 +81,10 @@ describe("runJobSafely logging", () => {
     await runJobSafely(job);
 
     const entries = await readLogEntries();
-    expect(entries).toHaveLength(1);
-    expect(entries[0]?.jobName).toBe("void-job");
-    expect(entries[0]?.status).toBe("success");
-    expect(entries[0]?.durationMs).toBeGreaterThanOrEqual(0);
+    expect(entries).toHaveLength(2);
+    expect(entries[1]?.jobName).toBe("void-job");
+    expect(entries[1]?.status).toBe("success");
+    expect(entries[1]?.durationMs).toBeGreaterThanOrEqual(0);
   });
 
   test("logs status 'skipped' with skipReason when run() returns skipped result", async () => {
@@ -100,9 +100,9 @@ describe("runJobSafely logging", () => {
     await runJobSafely(job);
 
     const entries = await readLogEntries();
-    expect(entries).toHaveLength(1);
-    expect(entries[0]?.status).toBe("skipped");
-    expect(entries[0]?.skipReason).toBe("token expired");
+    expect(entries).toHaveLength(2);
+    expect(entries[1]?.status).toBe("skipped");
+    expect(entries[1]?.skipReason).toBe("token expired");
   });
 
   test("logs status 'failure' with error when run() throws", async () => {
@@ -117,9 +117,9 @@ describe("runJobSafely logging", () => {
     await runJobSafely(job);
 
     const entries = await readLogEntries();
-    expect(entries).toHaveLength(1);
-    expect(entries[0]?.status).toBe("failure");
-    expect(entries[0]?.error).toBe("something broke");
+    expect(entries).toHaveLength(2);
+    expect(entries[1]?.status).toBe("failure");
+    expect(entries[1]?.error).toBe("something broke");
   });
 
   test("does not write log when LOG_DIR is not set", async () => {
@@ -150,5 +150,77 @@ describe("runJobSafely logging", () => {
     };
 
     await expect(runJobSafely(job)).resolves.toBeUndefined();
+  });
+
+  test("writes started entry with event, jobName, and startedAt", async () => {
+    const job: Job = {
+      name: "started-job",
+      schedule: "* * * * *",
+      run: async () => {},
+    };
+
+    await runJobSafely(job);
+
+    const entries = await readLogEntries();
+    expect(entries).toHaveLength(2);
+    expect(entries[0]?.event).toBe("started");
+    expect(entries[0]?.jobName).toBe("started-job");
+    expect(typeof entries[0]?.startedAt).toBe("string");
+  });
+
+  test("started entry does not contain finishedAt, durationMs, or status", async () => {
+    const job: Job = {
+      name: "started-fields-job",
+      schedule: "* * * * *",
+      run: async () => {},
+    };
+
+    await runJobSafely(job);
+
+    const entries = await readLogEntries();
+    expect(entries).toHaveLength(2);
+    const started = entries[0];
+    expect(started?.finishedAt).toBeUndefined();
+    expect(started?.durationMs).toBeUndefined();
+    expect(started?.status).toBeUndefined();
+  });
+
+  test("records errorStack in completed entry when run() throws an Error", async () => {
+    const job: Job = {
+      name: "stack-job",
+      schedule: "* * * * *",
+      run: async () => {
+        throw new Error("stack test");
+      },
+    };
+
+    await runJobSafely(job);
+
+    const entries = await readLogEntries();
+    expect(entries).toHaveLength(2);
+    const completed = entries[1];
+    expect(completed?.event).toBe("completed");
+    expect(completed?.status).toBe("failure");
+    expect(typeof completed?.errorStack).toBe("string");
+    expect(completed?.errorStack as string).toContain("stack test");
+  });
+
+  test("errorStack is undefined when run() throws a non-Error value", async () => {
+    const job: Job = {
+      name: "non-error-job",
+      schedule: "* * * * *",
+      run: async () => {
+        throw "string error";
+      },
+    };
+
+    await runJobSafely(job);
+
+    const entries = await readLogEntries();
+    expect(entries).toHaveLength(2);
+    const completed = entries[1];
+    expect(completed?.event).toBe("completed");
+    expect(completed?.status).toBe("failure");
+    expect(completed?.errorStack).toBeUndefined();
   });
 });
