@@ -1,16 +1,26 @@
 import { appendFile, mkdir, readdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 
-export interface JobLogEntry {
+export interface StartedLogEntry {
+  event: "started";
+  jobName: string;
+  startedAt: string;
+}
+
+export interface CompletedLogEntry {
+  event: "completed";
   jobName: string;
   startedAt: string;
   finishedAt: string;
   durationMs: number;
   status: "success" | "failure" | "skipped";
   error?: string;
+  errorStack?: string;
   skipReason?: string;
   outputPath?: string;
 }
+
+export type JobLogEntry = StartedLogEntry | CompletedLogEntry;
 
 const DATE_JSONL_PATTERN = /^(\d{4})-(\d{2})-(\d{2})\.jsonl$/;
 
