@@ -1,16 +1,11 @@
 import { expect, mock, spyOn, test } from "bun:test";
 
-// hello ジョブが読み込まれる前に SDK の query を差し替える必要があるため、
+// hello ジョブが読み込まれる前に claudeQuery を差し替える必要があるため、
 // mock.module を呼んでから src を動的 import する
-let queryMessages: unknown[] = [];
+let queryResult = "";
 
-mock.module("@anthropic-ai/claude-agent-sdk", () => ({
-  query: () =>
-    (async function* () {
-      for (const message of queryMessages) {
-        yield message;
-      }
-    })(),
+mock.module("../../lib/claude", () => ({
+  claudeQuery: async () => queryResult,
 }));
 
 const { jobs } = await import("../");
@@ -22,8 +17,8 @@ test("hello job is registered with a string schedule", () => {
   expect(typeof hello?.schedule).toBe("string");
 });
 
-test("hello job logs the result text on a success result", async () => {
-  queryMessages = [{ type: "result", subtype: "success", result: "hi there" }];
+test("hello job logs the result text when claudeQuery returns a result", async () => {
+  queryResult = "hi there";
   const logSpy = spyOn(console, "log").mockImplementation(() => {});
   try {
     await run();
@@ -33,15 +28,13 @@ test("hello job logs the result text on a success result", async () => {
   }
 });
 
-test("hello job logs an error on a failure result", async () => {
-  queryMessages = [{ type: "result", subtype: "error_max_turns" }];
-  const errorSpy = spyOn(console, "error").mockImplementation(() => {});
+test("hello job does not log when claudeQuery returns an empty string", async () => {
+  queryResult = "";
+  const logSpy = spyOn(console, "log").mockImplementation(() => {});
   try {
     await run();
-    expect(errorSpy).toHaveBeenCalledWith(
-      "[hello] result failed: error_max_turns",
-    );
+    expect(logSpy).not.toHaveBeenCalled();
   } finally {
-    errorSpy.mockRestore();
+    logSpy.mockRestore();
   }
 });
